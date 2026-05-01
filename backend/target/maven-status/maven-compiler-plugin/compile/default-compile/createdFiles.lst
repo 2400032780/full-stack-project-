@@ -12,6 +12,7 @@ com\farming\backend\model\Consultation.class
 com\farming\backend\service\ArticleService.class
 com\farming\backend\repository\ArticleRepository.class
 com\farming\backend\model\Crop.class
+com\farming\backend\config\DatabaseConfig.class
 com\farming\backend\model\Article.class
 com\farming\backend\repository\ConsultationRepository.class
 com\farming\backend\repository\ContactMessageRepository.class
