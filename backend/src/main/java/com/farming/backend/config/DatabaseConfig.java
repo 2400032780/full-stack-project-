@@ -15,45 +15,60 @@ public class DatabaseConfig {
     @Value("${MYSQL_URL:#{null}}")
     private String mysqlUrl;
 
-    @Value("${spring.datasource.username:root}")
-    private String defaultUsername;
+    @Value("${MYSQLHOST:localhost}")
+    private String host;
 
-    @Value("${spring.datasource.password:}")
-    private String defaultPassword;
+    @Value("${MYSQLPORT:3306}")
+    private String port;
+
+    @Value("${MYSQLDATABASE:farmingdb}")
+    private String database;
+
+    @Value("${MYSQLUSER:root}")
+    private String username;
+
+    @Value("${MYSQLPASSWORD:}")
+    private String password;
 
     @Bean
     public DataSource dataSource() throws URISyntaxException {
-        if (mysqlUrl != null && !mysqlUrl.trim().isEmpty()) {
-            URI dbUri = new URI(mysqlUrl);
-            
-            String username = defaultUsername;
-            String password = defaultPassword;
-            
-            if (dbUri.getUserInfo() != null) {
-                String[] userInfo = dbUri.getUserInfo().split(":", 2);
-                username = userInfo[0];
-                if (userInfo.length > 1) {
-                    password = userInfo[1];
+        // Try MYSQL_URL first
+        if (mysqlUrl != null && !mysqlUrl.trim().isEmpty() && !mysqlUrl.contains("${{")) {
+            try {
+                URI dbUri = new URI(mysqlUrl);
+                String dbUser = username;
+                String dbPass = password;
+                
+                if (dbUri.getUserInfo() != null) {
+                    String[] userInfo = dbUri.getUserInfo().split(":", 2);
+                    dbUser = userInfo[0];
+                    if (userInfo.length > 1) {
+                        dbPass = userInfo[1];
+                    }
                 }
+
+                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + ":" + dbUri.getPort() + dbUri.getPath() 
+                               + "?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+                return DataSourceBuilder.create()
+                        .url(dbUrl)
+                        .username(dbUser)
+                        .password(dbPass)
+                        .driverClassName("com.mysql.cj.jdbc.Driver")
+                        .build();
+            } catch (Exception e) {
+                // Ignore and fallback to individual variables
             }
-
-            // Append allowPublicKeyRetrieval=true and useSSL=false explicitly
-            String dbUrl = "jdbc:mysql://" + dbUri.getHost() + ":" + dbUri.getPort() + dbUri.getPath() 
-                           + "?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-
-            return DataSourceBuilder.create()
-                    .url(dbUrl)
-                    .username(username)
-                    .password(password)
-                    .driverClassName("com.mysql.cj.jdbc.Driver")
-                    .build();
         }
 
-        // Fallback to local
+        // Fallback to individual variables
+        String dbUrl = "jdbc:mysql://" + host + ":" + port + "/" + database 
+                       + "?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
         return DataSourceBuilder.create()
-                .url("jdbc:mysql://localhost:3306/farmingdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC")
-                .username(defaultUsername)
-                .password(defaultPassword)
+                .url(dbUrl)
+                .username(username)
+                .password(password)
                 .driverClassName("com.mysql.cj.jdbc.Driver")
                 .build();
     }
